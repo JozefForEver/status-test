@@ -1,32 +1,28 @@
+// api/status.js
+
 export default async function handler(req, res) {
-  const ip = req.query.ip || "5.252.103.70";
-  const port = req.query.port || "8888";
-  const url = `https://tsarvar.com/en/servers/gta-samp/${ip}:${port}`;
-  
+  const { ip, port } = req.query;
+  const server = `${ip}:${port}`;
+  const url = `https://tsarvar.com/api/v1/server/samp/${server}`;
+
   try {
     const response = await fetch(url);
-    const html = await response.text();
-
-    const playersMatch = html.match(/(\d+)\s*\/\s*(\d+)\s*Players/);
-    const titleMatch = html.match(/<title>(.*?) - GTA SAMP server/);
-
-    const players = playersMatch ? parseInt(playersMatch[1]) : 0;
-    const maxPlayers = playersMatch ? parseInt(playersMatch[2]) : 0;
-    const hostname = titleMatch ? titleMatch[1].trim() : "";
+    const data = await response.json();
 
     res.status(200).json({
-      online: players > 0,
-      players,
-      max_players: maxPlayers,
-      hostname,
+      online: data?.online || false,
+      players: data?.players || 0,
+      max_players: data?.max_players || 0,
+      hostname: data?.hostname || "",
       last_updated: new Date().toISOString()
     });
-  } catch (e) {
-    res.status(200).json({
+  } catch (error) {
+    res.status(500).json({
       online: false,
       players: 0,
       max_players: 0,
       hostname: "",
+      error: "Failed to fetch server status",
       last_updated: new Date().toISOString()
     });
   }
